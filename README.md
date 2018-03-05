@@ -1,4 +1,4 @@
-# shinevvSdkJS
+# ShinevvSdkJS
 北京亮眼云视科技有限公司
 
 ## Design goals
