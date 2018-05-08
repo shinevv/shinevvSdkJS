@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Shinevv</title>
+    <style>
+    html,body{margin:0;padding:0;}
+    </style>
+	<script src="https://vvroom.shinevv.cn/js/ShinevvSdk.js"></script>
+    <script>
+    window.onload = function (){
+		
+		document.getElementById("btnJoinRoom").onclick = function(){//开始会议
+			var txt = document.getElementById("txt").value;
+			startMeeting(txt);
+		}
+
+		document.getElementById("btnLeaveRoom").onclick = function(){//停止会议
+			stopMeeting();
+		}
+
+		document.getElementById("btnMute").onclick = function(){//本地静音
+			muteAudio();
+		}		
+
+		document.getElementById("btnUnMute").onclick = function(){//本地解禁音频
+			unMuteAudio();
+		}
+
+		document.getElementById("btnDisableVideo").onclick = function(){//本地禁视
+			disableVideo();
+		}
+
+		document.getElementById("btnEnableVideo").onclick = function(){//本地解禁视频
+			enableVideo();
+		}	
+		
+		document.getElementById("btnenableMemberVideo").onclick = function(){//本地解禁视频
+			enableMemberVideo();
+		}	
+
+		document.getElementById("btndisableMemberVideo").onclick = function(){//本地解禁视频
+			disableMemberVideo();
+		}
+
+		document.getElementById("btnenableMemberAudio").onclick = function(){//本地解禁视频
+			enableMemberAudio();
+		}
+
+		document.getElementById("btndisableMemberAudio").onclick = function(){//本地解禁视频
+			disableMemberAudio();
+		}
+
+		document.getElementById("startRecord").onclick = function(){//本地开始录制
+			startRecord();
+		}
+		document.getElementById("stopRecord").onclick = function(){//本地停止录制
+			stopRecord();
+		}
+
+		const localMemberId = parseInt(Math.random()*9999999+1).toString();
+
+		const displayName = '亮眼云';
+
+		var shinevv = null;
+		
+		var remote_index = 0;
+		
+		var last_memberid = null;
+
+		const token = '1a8f0b618d1ea5d527e811b736f221fe';
+		
+		function startMeeting(roomId)
+		{
+			//shinevv = new Shinevv(localMemberId, displayName, '192.168.1.226', 3443); 
+			shinevv = new Shinevv(localMemberId, displayName, 'vvroom.shinevv.cn', 3443);
+
+			shinevv.setVideoLabel(localMemberId, 'video_local');
+
+			shinevv.joinRoom(
+				roomId,
+				true,
+				token,
+				function(){
+					console.log('joinRoom onSuccess');
+				},
+				function(reason){
+					console.log('joinRoom onFail reason = %s',reason);
+
+					shinevv.leaveRoom();
+
+					shinevv = null;
+				},
+				function(){
+					console.log('joinRoom onDisconnected');
+
+					shinevv.leaveRoom();
+
+					shinevv = null;
+				},
+				function(reason){
+					console.log('joinRoom onClose reason = %s', reason);
+
+					shinevv.leaveRoom();
+
+					shinevv = null;
+				},
+				function(remote_memberId, displayName){
+					console.log('joinRoom onNewMemberJoined remote_memberId = %s, displayName = %s',remote_memberId, displayName);
+					
+					if (remote_index == 0)
+					{
+						shinevv.setVideoLabel(remote_memberId,'video_remote1');
+						
+						remote_index++;
+					}
+					else
+					{
+						shinevv.setVideoLabel(remote_memberId,'video_remote2');
+						
+						remote_index++;
+					}
+
+					last_memberid = remote_memberId;
+				},
+				function(remote_memberId, displayName){
+					console.log('joinRoom onMemberLeft remote_memberId = %s, displayName = %s',remote_memberId, displayName);
+				},
+				function(memberId, kind, bOpen){
+					console.log('joinRoom onMemberStatusChange memberId = %s, kind = %s bOpen = %s',memberId, kind, bOpen.toString());
+				});
+		}
+
+		function stopMeeting()
+		{
+			if (!shinevv)
+				return;
+
+			shinevv.leaveRoom();
+			
+			shinevv = null;
+		}
+
+		function muteAudio()
+		{
+			if (!shinevv)
+				return;
+
+			shinevv.muteMic();
+		}
+
+		function unMuteAudio()
+		{
+			if (!shinevv)
+				return;
+
+			shinevv.unmuteMic();
+		}	
+		
+		function disableVideo()
+		{
+			if (!shinevv)
+				return;
+
+			shinevv.disableWebcam();
+		}
+
+		function enableVideo()
+		{
+			if (!shinevv)
+				return;
+
+			shinevv.enableWebcam();
+		}	
+
+		function enableMemberVideo()
+		{
+			if (!shinevv)
+				return;
+
+			shinevv.enableMemberVideo(last_memberid);
+		}
+
+		function disableMemberVideo()
+		{
+			if (!shinevv)
+				return;
+
+			shinevv.disableMemberVideo(last_memberid);
+		}
+
+		function enableMemberAudio()
+		{
+			if (!shinevv)
+				return;
+
+			shinevv.enableMemberAudio(last_memberid);
+		}
+
+		function disableMemberAudio()
+		{
+			if (!shinevv)
+				return;
+
+			shinevv.disableMemberAudio(last_memberid);
+		}
+
+		function startRecord()
+		{
+			if (!shinevv)
+				return;
+
+			//默认参数是 屏幕宽,屏幕高,2000000
+			shinevv.startRecord();		
+			//shinevv.startRecord(1280, 720, 1500000);	
+			//shinevv.startRecord(undefined, undefined, 1500000);		
+		}
+
+		function stopRecord()
+		{
+			if (!shinevv)
+				return;
+
+			shinevv.stopRecord(
+				function(recordedBlob){
+					console.log('stopRecord call back recordedBlob=%o',recordedBlob);
+
+					//这里blob有三种用法
+					// 第一种 作为a标签的链接源
+					var downloadLink = document.getElementById('downloadLink');
+					downloadLink.innerHTML = 'Download video file';
+
+					var rand =  Math.floor((Math.random() * 10000000));
+					var name  = "video_"+rand+".webm" ;
+
+					downloadLink.setAttribute( "download", name);
+					downloadLink.setAttribute( "name", name);
+
+					var videoURL = window.URL.createObjectURL(recordedBlob);
+
+					downloadLink.href = videoURL;
+
+					//第二种 作为video标签的视频源
+					var video = document.getElementById('video_record');
+					video.src = videoURL;	
+					
+					//第三种 录制成功后使用axios上传到服务端
+					// var formdata = new FormData();
+					// formdata.append('file', recordedBlob);
+					// axios({
+					// 	url:'https://192.168.1.190/uploadvod.php',
+					// 	method:'post',
+					// 	data:formdata,
+					// 	headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+					// 	onUploadProgress: (arg) => {
+						//此回调获得上传进度
+					// 		console.log(arg);
+					// 		var rate = 0;
+					// 		if (arg.total > 0)
+					// 			rate = arg.loaded / arg.total;
+					// 		else
+					// 			rate = 1.0;
+							
+					// 		rate = rate.toFixed(3);
+							
+					// 	}
+					// }).then((res)=>{console.log('chenc formdata res=%o',res)});					
+				}
+			);			
+		}
+    }
+    </script>
+</head>
+
+<body>
+<style>
+a#downloadLink {
+	display: block;
+	margin: 0 0 1em 0;
+	min-height: 1.2em;
+}
+p#data {
+	min-height: 6em;
+}
+</style>
+<input type="text" id="txt">
+<button id="btnJoinRoom">joinRoom</button>
+<button id="btnLeaveRoom">leaveRoom</button>
+<button id="btnMute">mute</button>
+<button id="btnUnMute">unMute</button>
+<button id="btnDisableVideo">disableVideo</button>
+<button id="btnEnableVideo">enableVideo</button>
+<button id="btnenableMemberVideo">enableMemberVideo</button>
+<button id="btndisableMemberVideo">disableMemberVideo</button>
+<button id="btnenableMemberAudio">enableMemberAudio</button>
+<button id="btndisableMemberAudio">disableMemberAudio</button>
+<a id="downloadLink" download="mediarecorder.webm" name="mediarecorder.webm" href></a>
+<button id="startRecord">startRecord</button>
+<button id="stopRecord">stopRecord</button>
+<video id="video_local" width="1280" height="720" autoplay="autoplay" preload="auto" src=""></video>
+<video id="video_remote1" width="1280" height="720" autoplay="autoplay" preload="auto" src=""></video>
+<video id="video_remote2" width="1280" height="720" autoplay="autoplay" preload="auto" src=""></video>
+<video id="video_record" width="1280" height="720" autoplay="autoplay" preload="auto" src=""></video>
+</body>
+
+</html>
